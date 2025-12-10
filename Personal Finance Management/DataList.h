@@ -1,4 +1,8 @@
 #pragma once
+#include <iostream>
+#include <stdexcept>
+
+using namespace std;
 
 template<class T>
 class DataList {
@@ -27,6 +31,8 @@ public:
 			delete[] items;
 		}
 	}
+	DataList(const DataList&) = delete;
+	DataList& operator=(const DataList&) = delete;
 	void add(T item) {
 		if (count == capacity) {
 			expand();
@@ -46,12 +52,17 @@ public:
 	}
 	T& get(int index) {
 		if (index < 0 || index >= count) {
-			cout << "The index you have inputted is invalid.";
-			return;
+			throw out_of_range("Index out of bounds!");
 		}
 		return items[index];
 	}
+	T& operator[](int index) {
+		return get(index);
+	}
 	int size() {
 		return count;
+	}
+	void clear() {
+		count = 0;
 	}
 };

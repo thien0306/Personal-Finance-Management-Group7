@@ -1,20 +1,29 @@
-// Personal Finance Management.cpp : This file contains the 'main' function. Program execution begins and ends there.
-//
+﻿#include <iostream>
+#include "Transaction.h"
 
-#include <iostream>
+using namespace std;
 
-int main()
-{
-    std::cout << "Hello World!\n";
+int main() {
+    TransactionManager app("data.txt");
+    cout << "=== CORE SYSTEM TEST (WITH WALLET) ===" << endl;
+
+    // 1. Thêm dữ liệu mẫu (Nhớ tham số thứ 5 là Wallet)
+    // app.addTransaction(55000, "An sang", "2023-12-08", "EXPENSE", "Tien Mat", "Pho Bo");
+    // app.addTransaction(250000, "Internet", "2023-12-08", "EXPENSE", "VIB Bank", "Cuoc thang 12");
+    // app.addTransaction(15000000, "Luong", "2023-12-01", "INCOME", "VIB Bank", "Cong ty Tra");
+
+    // 2. Hiển thị
+    DataList<Transaction>& list = app.getList();
+    cout << "Tong so giao dich: " << list.size() << endl;
+
+    for (int i = 0; i < list.size(); i++) {
+        Transaction t = list[i];
+        cout << "[" << t.id << "] "
+            << t.date.toString() << " | "
+            << t.wallet << " | "        // <--- In ra tên ví
+            << t.category << " : "
+            << t.amount << endl;
+    }
+
+    return 0;
 }
-
-// Run program: Ctrl + F5 or Debug > Start Without Debugging menu
-// Debug program: F5 or Debug > Start Debugging menu
-
-// Tips for Getting Started: 
-//   1. Use the Solution Explorer window to add/manage files
-//   2. Use the Team Explorer window to connect to source control
-//   3. Use the Output window to see build output and other messages
-//   4. Use the Error List window to view errors
-//   5. Go to Project > Add New Item to create new code files, or Project > Add Existing Item to add existing code files to the project
-//   6. In the future, to open this project again, go to File > Open > Project and select the .sln file

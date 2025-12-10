@@ -18,15 +18,18 @@
     <ClCompile Include="Personal Finance Management.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="FinanceManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="DataList.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Transaction.h">
+    <ClInclude Include="Model.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Utils.h">
+    <ClInclude Include="FinanceManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
