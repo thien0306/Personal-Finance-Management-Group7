@@ -123,12 +123,23 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Personal Finance Management.cpp" />
+    <ClCompile Include="Date.cpp" />
+    <ClCompile Include="Expense.cpp" />
+    <ClCompile Include="IncomeSource.cpp" />
+    <ClCompile Include="main.cpp" />
     <ClCompile Include="FinanceManager.cpp" />
+    <ClCompile Include="RecurringTransaction.cpp" />
+    <ClCompile Include="Transaction.cpp" />
+    <ClCompile Include="Wallet.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="DataList.h" />
-    <ClInclude Include="Model.h" />
+    <ClInclude Include="Date.h" />
+    <ClInclude Include="Expense.h" />
+    <ClInclude Include="IncomeSource.h" />
+    <ClInclude Include="RecurringTransaction.h" />
+    <ClInclude Include="Transaction.h" />
+    <ClInclude Include="Wallet.h" />
     <ClInclude Include="FinanceManager.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
