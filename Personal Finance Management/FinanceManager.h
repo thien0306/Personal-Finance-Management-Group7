@@ -32,7 +32,7 @@ public:
     void addExpenseCategory(string name);
     void addIncomeCategory(string name);
 
-    void addRecurring(int type, int catId, int walletId, double amount, Date start, Date end, string desc);
+    void addRecurring(TransactionType type, int catId, int walletId, double amount, Date start, Date end, string desc);
     void processRecurringTransaction();
 
     void showWallets();

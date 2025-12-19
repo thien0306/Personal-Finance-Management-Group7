@@ -135,7 +135,7 @@ void FinanceManager::addExpenseCategory(string name) {
     cout << "Da them nguon chi: '" << name << "' (ID: " << exp.id << ")\n";
 }
 
-void FinanceManager::addRecurring(int type, int cateId, int walletId, double amount,
+void FinanceManager::addRecurring(TransactionType type, int cateId, int walletId, double amount,
     Date start, Date end, string desc) {
     RecurringTransaction rt(type, cateId, walletId, amount, start, end, desc);
     recurringTransactions.add(rt);
