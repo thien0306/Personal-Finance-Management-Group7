@@ -10,6 +10,9 @@
 
 using namespace std;
 
+void writeString(ofstream& out, const string& s);
+void readString(ifstream& in, string& s);
+
 class FinanceManager {
 private:
     DataList<Wallet> wallets;
@@ -32,13 +35,18 @@ public:
     void addExpenseCategory(string name);
     void addIncomeCategory(string name);
 
-    void addRecurring(int type, int catId, int walletId, double amount, Date start, Date end, string desc);
+    void addRecurring(TransactionType type, int catId, int walletId, double amount, Date start, Date end, string desc);
     void processRecurringTransaction();
 
     void showWallets();
-    void showTransactionFromDate(Date d);
     void showIncomeCategory();
     void showExpenseCategory();
+
+    void showTransactionFromDate(Date from, Date to);
+    void statisticByDate(Date from, Date to);
+    void statisticByWallet(Date from, Date to);
+    void incomeBreakdownByYear(int year);
+    void expenseBreakdownByYear(int year);
 
     void loadData();
     void saveData();
