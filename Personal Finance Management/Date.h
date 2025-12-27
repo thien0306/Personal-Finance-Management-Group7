@@ -10,11 +10,10 @@
 using namespace std;
 
 class Date {
-private:
+public:
     int day;
     int month;
     int year;
-public:
     Date();
     Date(int d, int m, int y);
     int getDay() const;
@@ -24,13 +23,15 @@ public:
     void addOneMonth();
     string toString() const;
     static Date fromString(string dateStr);
+    void setIndefinite();
+    bool isIndefinite() const;
     bool operator<(const Date& other) const;
     bool operator==(const Date& other) const;
     bool operator>(const Date& other) const;
     bool operator<=(const Date& other) const;
     bool operator>=(const Date& other) const;
     bool isValid() const;
-    friend inline istream& operator>>(istream& is, Date& date);
-    friend inline ostream& operator<<(ostream& os, const Date& date);
+    friend istream& operator>>(istream& is, Date& date);
+    friend ostream& operator<<(ostream& os, const Date& date);
 };
 

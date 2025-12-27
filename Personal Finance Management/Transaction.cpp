@@ -13,8 +13,8 @@ Transaction::Transaction() {
 ostream& operator<<(ostream& os, const Transaction& t) {
     string typeString = (t.type == INCOME) ? "Thu" : "Chi";
     os << left << setw(5) << t.id
-        << setw(12) << t.date.toString()
-        << setw(10) << typeString
+        << setw(12) << typeString
+        << setw(10) << t.date.toString()
         << right << setw(15) << (long long)t.amount << "  " 
         << left << t.description;
     return os;

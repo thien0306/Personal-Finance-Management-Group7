@@ -8,20 +8,14 @@ using namespace std;
 
 class RecurringTransaction {
 public:
+	int id;
 	TransactionType type;
-	int CategoryId;
+	int categoryId;
 	int walletId;
 	double amount;
 	Date startDate; 
 	Date endDate; 
-	string description;
-
-	Date nextDueDate;
-	bool isFinished;
-
+	string desc;
+	Date lastProcessedDate;
 	RecurringTransaction();
-	RecurringTransaction(TransactionType _type, int cateId, int WId, double _amount,
-		Date start, Date end, string desc);
-
-	friend ostream& operator<<(ostream& os, const RecurringTransaction& rt);
 };

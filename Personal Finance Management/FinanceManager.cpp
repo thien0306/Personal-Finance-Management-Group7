@@ -6,23 +6,17 @@
 #include "FinanceManager.h"
 #include "Wallet.h"
 #include "Transaction.h"
+#include "Date.h"
 
 
 using namespace std;
 
 FinanceManager::FinanceManager() {
-    if (incomeCategory.size() == 0) {
-        incomeCategory.add(Income(1, "Luong"));
-        incomeCategory.add(Income(2, "Thuong"));
-        incomeCategory.add(Income(3, "Cho thue nha"));
-    }
+    
+}
 
-    if (expenseCategory.size() == 0) {
-        expenseCategory.add(Expense(1, "An uong"));
-        expenseCategory.add(Expense(2, "Di chuyen"));
-        expenseCategory.add(Expense(3, "Tien nha"));
-        expenseCategory.add(Expense(4, "Mua sam"));
-    }
+FinanceManager::~FinanceManager() {
+
 }
 
 void FinanceManager::refreshNextIds() {
@@ -37,6 +31,9 @@ void FinanceManager::refreshNextIds() {
 
     for (int i = 0; i < expenseCategory.size(); i++)
         if (expenseCategory[i].id >= nextExpenseId) nextExpenseId = expenseCategory[i].id + 1;
+    for (int i = 0; i < recurringTransactions.size(); i++) {
+        if (recurringTransactions[i].id >= nextRecurringId) nextRecurringId = recurringTransactions[i].id + 1;
+    }
 }
 
 
@@ -44,7 +41,7 @@ void FinanceManager::addWallet(string name, long long initialBalance) {
     int newId = wallets.size() + 1;
     Wallet w(newId, name, initialBalance);
     wallets.add(w);
-    cout << ">> Vi '" << name << "' da duoc them thanh cong voi so du: " << initialBalance << endl;
+    cout << ">> Vi '" << name << "' da duoc them thanh cong voi so du: " << initialBalance << " VND" << endl;
 }
 
 void FinanceManager::addTransaction(int walletId, int categoryId, TransactionType type, double amount, string desc, Date date) {
@@ -94,7 +91,7 @@ void FinanceManager::addTransaction(int walletId, int categoryId, TransactionTyp
     }
     else {
         if (wallets[walletIndex].balance < amount) {
-            cout << "Canh bao: So du khong du! Van tiep tuc? (1: Co, 0: Khong): ";
+            cout << "\nCanh bao: So du khong du! Van tiep tuc? (1: Co, 0: Khong): ";
             int choice;
             cin >> choice;
             if (choice == 0) return;
@@ -112,7 +109,6 @@ void FinanceManager::addTransaction(int walletId, int categoryId, TransactionTyp
     t.date = date;
 
     transactions.add(t);
-    cout << " Giao dich thanh cong!\n";
 }
 
 void FinanceManager::addIncomeCategory(string name) {
@@ -137,29 +133,181 @@ void FinanceManager::addExpenseCategory(string name) {
 
 void FinanceManager::addRecurring(TransactionType type, int cateId, int walletId, double amount,
     Date start, Date end, string desc) {
-    RecurringTransaction rt(type, cateId, walletId, amount, start, end, desc);
+    RecurringTransaction rt;
+    rt.id = nextRecurringId++;
+    rt.type = type;
+    rt.categoryId = cateId;
+    rt.walletId = walletId;
+    rt.amount = amount;
+    rt.startDate = start;
+    rt.endDate = end;
+    rt.desc = desc;
+    rt.lastProcessedDate = { 0,0,0 };
     recurringTransactions.add(rt);
-    cout << ">> Da cai dat lich tu " << start << " den " << end << endl;
+    cout << " Da them giao dich dinh ki moi"<< endl;
 }
 
-void FinanceManager::processRecurringTransaction() {
-    Date today;
+bool FinanceManager::processRecurringTransactions(Date currentDate) {
+    bool hasChanges = false;
     int count = 0;
+
     for (int i = 0; i < recurringTransactions.size(); i++) {
         RecurringTransaction& rt = recurringTransactions[i];
-        if (rt.isFinished) continue;
-        while (rt.nextDueDate <= today && rt.nextDueDate <= rt.endDate) {
-            TransactionType tType = (rt.type == 1) ? INCOME : EXPENSE;
-            addTransaction(rt.walletId, rt.CategoryId, tType, rt.amount,
-                rt.description + " (Dinh ky)", rt.nextDueDate);
-            rt.nextDueDate.addOneMonth();
-            count++;
+        Date checkPoint;
+        if (rt.lastProcessedDate.getDay() == 0) {
+            checkPoint = rt.startDate;
+            if (checkPoint.month == 1) {
+                checkPoint.month = 12;
+                checkPoint.year--;
+            }
+            else {
+                checkPoint.month--;
+            }
         }
-        if (rt.nextDueDate > rt.endDate) {
-            rt.isFinished = true;
+        else {
+            checkPoint = rt.lastProcessedDate;
+        }
+
+        while (true) {
+            checkPoint.addOneMonth();
+            Date nextDueDate = checkPoint;
+            if (nextDueDate > currentDate) break;
+            if (!rt.endDate.isIndefinite() && nextDueDate > rt.endDate) break;
+            if (nextDueDate < rt.startDate) {
+                checkPoint = nextDueDate;
+                continue;
+            }
+
+            addTransaction(
+                rt.walletId,
+                rt.categoryId,
+                (TransactionType)rt.type,
+                rt.amount,
+                rt.desc,
+                nextDueDate
+            );
+
+            count++;
+            checkPoint = nextDueDate;
+            rt.lastProcessedDate = nextDueDate;
+            hasChanges = true;
         }
     }
-    if (count > 0) cout << "Da tu dong tao " << count << " giao dich dinh ky.\n";
+
+    if (hasChanges) {
+        saveData();
+        cout << "Da xu ly xong giao dich dinh ki con thieu." << endl;
+    }
+    return hasChanges;
+}
+
+void FinanceManager::showRecurringTransaction() {
+    cout << "\n---------------- DANH SACH GIAO DICH DINH KY ----------------" << endl;
+    cout << setfill(' ');
+    cout << left << setw(5) << "ID"
+        << setw(10) << "Loai"
+        << setw(15) << "So tien (VND)"
+        << setw(15) << "Vi"
+        << setw(20) << "Danh muc"
+        << setw(12) << "Bat dau"
+        << setw(15) << "Ket thuc"
+        << "Mo ta" << endl;
+
+    for (int i = 0; i < recurringTransactions.size(); i++) {
+        RecurringTransaction t = recurringTransactions[i];
+
+        string walletName = "";
+        for (int j = 0; j < wallets.size(); j++) {
+            if (wallets[j].id == t.walletId) {
+                walletName = wallets[j].name;
+                break;
+            }
+        }
+
+        string catName = "";
+        if (t.type == 1) {
+            for (int k = 0; k < incomeCategory.size(); k++) {
+                if (incomeCategory[k].id == t.categoryId) {
+                    catName = incomeCategory[k].name;
+                    break;
+                }
+            }
+        }
+        else {
+            for (int k = 0; k < expenseCategory.size(); k++) {
+                if (expenseCategory[k].id == t.categoryId) {
+                    catName = expenseCategory[k].name;
+                    break;
+                }
+            }
+        }
+
+        cout << left << setw(5) << t.id
+            << setw(10) << (t.type == 1 ? "Thu" : "Chi")
+            << setw(15) << (long long)t.amount
+            << setw(15) << walletName
+            << setw(20) << catName;
+
+        cout << t.startDate;
+        cout << "   ";
+
+        if (t.endDate.getDay() == 0 && t.endDate.getMonth() == 0 && t.endDate.getYear() == 0) {
+            cout << setw(15) << "Vo thoi han";
+        }
+        else {
+            cout << t.endDate;
+            cout << "     ";
+        }
+        cout << " " << t.desc << endl;
+    }
+}
+
+void FinanceManager::removeRecurringTransaction(int id) {
+    int index = -1;
+    for (int i = 0; i < recurringTransactions.size(); i++) {
+        if (recurringTransactions[i].id == id) {
+            index = i;
+            break;
+        }
+    }
+    if (index == -1) {
+        cout << "Loi: Khong tim thay giao dich  co ID = " << id << endl;
+        return;
+    }
+    recurringTransactions.removeAt(index);
+    cout << "Da xoa thanh cong giao dich dinh ky co ID: " << id << endl;
+}
+
+void FinanceManager::removeIncomeCategory(int id) {
+    int index = -1;
+    for (int i = 0; i < incomeCategory.size(); i++) {
+        if (incomeCategory[i].id == id) {
+            index = i;
+            break;
+        }
+    }
+    if (index == -1) {
+        cout << "Loi: Khong tim thay category  co ID = " << id << endl;
+        return;
+    }
+    incomeCategory.removeAt(index);
+    cout << "Da xoa thanh cong category co ID: " << id << endl;
+}
+
+void FinanceManager::removeExpenseCategory(int id) {
+    int index = -1;
+    for (int i = 0; i < expenseCategory.size(); i++) {
+        if (expenseCategory[i].id == id) {
+            index = i;
+            break;
+        }
+    }
+    if (index == -1) {
+        cout << "Loi: Khong tim thay category co ID = " << id << endl;
+        return;
+    }
+    expenseCategory.removeAt(index);
+    cout << "Da xoa thanh cong category co ID: " << id << endl;
 }
 
 void FinanceManager::showIncomeCategory() {
@@ -179,43 +327,63 @@ void FinanceManager::showExpenseCategory() {
 }
 
 void FinanceManager::showWallets() {
+    cout << setfill(' ');
     cout << "\n---------------- DANH SACH VI DANG CO----------------" << endl;
     cout << left << setw(5) << "ID"
         << left << setw(20) << "Ten Vi"
         << right << setw(15) << "So Du (VND)" << endl;
     for (int i = 0; i < wallets.size(); i++) {
-        cout << wallets[i];
+        cout << wallets[i] << endl;
     }
-}
-
-int FinanceManager::findWalletIndexByID(int id) {
-    for (int i = 0; i < wallets.size(); i++) {
-        if (wallets.get(i).id == id) return i;
-    }
-    cout << "Khong tim thay vi.";
-    return -1;
 }
 
 void FinanceManager::showTransactionFromDate(Date from, Date to) {
+    cout << setfill(' ');
     cout << "\n---------------- DANH SACH GIAO DICH ----------------\n";
     cout << "Tu ngay: " << from << "  Den ngay: " << to << endl;
     cout << left << setw(5) << "ID"
         << left << setw(12) << "Loai"
         << left << setw(12) << "Ngay"
-        << left << setw(10) << "CatID"
-        << left << setw(10) << "ViID"
-        << right << setw(15) << "So Tien"
+        << left << setw(25) << "Category"
+        << left << setw(15) << "Vi"
+        << right << setw(15) << "So Tien(VND)"
         << "  Mo Ta" << endl;
     for (int i = 0; i < transactions.size(); i++) {
         Transaction& t = transactions[i];
         if (t.date >= from && t.date <= to) {
+            string walletName = "";
+            for (int j = 0; j < wallets.size(); j++) {
+                if (wallets[j].id == t.walletId) {
+                    walletName = wallets[j].name;
+                    break;
+                }
+            }
+
+            string catName = "";
+            if (t.type == INCOME) {
+                for (int i = 0; i < incomeCategory.size(); i++) {
+                    if (incomeCategory[i].id == t.CategoryId) {
+                        catName = incomeCategory[i].name;
+                        break;
+                    }
+                }
+            }
+            else {
+                for (int i = 0; i < expenseCategory.size(); i++) {
+                    if (expenseCategory[i].id == t.CategoryId) {
+                        catName = expenseCategory[i].name;
+                        break;
+                    }
+                }
+            }
             cout << left << setw(5) << t.id
-                << left << setw(12) << (t.type == INCOME ? "Thu" : "Chi")
-                << left << setw(12) << t.date.toString()
-                << left << setw(10) << t.CategoryId
-                << left << setw(10) << t.walletId
-                << right << setw(15) << fixed << setprecision(0) << t.amount
-                << "  " << t.description << endl;
+                << setw(12) << (t.type == INCOME ? "Thu" : "Chi")
+                << setw(12) << t.date << "   "
+                << setw(25) << catName
+                << setw(15) << walletName
+                << right << setw(15) << t.amount << "  "
+                << left << t.description << endl;
+
         }
     }
 }
@@ -232,11 +400,11 @@ void FinanceManager::statisticByDate(Date from, Date to) {
     }
     cout << "\n----------- THONG KE TU " << from << " DEN " << to << " -----------\n";
     cout << left << setw(20) << "Tong Thu:"
-        << right << setw(15) << totalIncome << endl;
+        << right << setw(15) << totalIncome <<" VND" << endl;
     cout << left << setw(20) << "Tong Chi:"
-        << right << setw(15) << totalExpense << endl;
+        << right << setw(15) << totalExpense << " VND" << endl;
     cout << left << setw(20) << "So Du:"
-        << right << setw(15) << totalIncome - totalExpense << endl;
+        << right << setw(15) << totalIncome - totalExpense << " VND" << endl;
 }
 
 void FinanceManager::statisticByWallet(Date from, Date to) {
@@ -260,10 +428,29 @@ void FinanceManager::statisticByWallet(Date from, Date to) {
         }
         cout << left << setw(5) << wallet.id
             << left << setw(20) << wallet.name
-            << right << setw(15) << income
-            << right << setw(15) << expense
-            << right << setw(15) << income - expense << endl;
+            << right << setw(15) << income << " VND"
+            << right << setw(15) << expense << " VND"
+            << right << setw(15) << income - expense << " VND" << endl;
     }
+}
+
+void FinanceManager::transactionInYear(int year) {
+    double totalIncome = 0;
+    double totalExpense = 0;
+    for (int i = 0; i < transactions.size(); i++) {
+        Transaction& t = transactions[i];
+        if (t.date.getYear() == year) {
+            if (t.type == INCOME) totalIncome += t.amount;
+            else totalExpense += t.amount;
+        }
+    }
+    cout << "\n----------- THONG KE NAM " << year << " ---------- - \n";
+    cout << left << setw(20) << "Tong Thu:"
+        << right << setw(15) << totalIncome << " VND" << endl;
+    cout << left << setw(20) << "Tong Chi:"
+        << right << setw(15) << totalExpense << " VND" << endl;
+    cout << left << setw(20) << "So Du:"
+        << right << setw(15) << totalIncome - totalExpense << " VND" << endl;
 }
 
 void FinanceManager::incomeBreakdownByYear(int year) {
@@ -284,7 +471,7 @@ void FinanceManager::incomeBreakdownByYear(int year) {
         }
         cout << left << setw(5) << inc.id
             << left << setw(25) << inc.name
-            << right << setw(15) << total << endl;
+            << right << setw(15) << total << " VND" << endl;
     }
 }
 
@@ -306,7 +493,7 @@ void FinanceManager::expenseBreakdownByYear(int year) {
         }
         cout << left << setw(5) << exp.id
             << left << setw(25) << exp.name
-            << right << setw(15) << total << endl;
+            << right << setw(15) << total << " VND" << endl;
     }
 }
 
@@ -330,39 +517,43 @@ void FinanceManager::saveData() {
     ofstream out("finance.dat", ios::binary);
     if (!out) return;
 
-    /* ===== WALLET ===== */
+    //Wallet
     int walletCount = wallets.size();
     out.write((char*)&walletCount, sizeof(int));
     for (int i = 0; i < walletCount; i++) {
         Wallet& w = wallets[i];
+
         out.write((char*)&w.id, sizeof(int));
         writeString(out, w.name);
         out.write((char*)&w.balance, sizeof(double));
     }
 
-    /* ===== INCOME CATEGORY ===== */
+    //Income
     int incCount = incomeCategory.size();
     out.write((char*)&incCount, sizeof(int));
     for (int i = 0; i < incCount; i++) {
         Income& inc = incomeCategory[i];
+
         out.write((char*)&inc.id, sizeof(int));
         writeString(out, inc.name);
     }
 
-    /* ===== EXPENSE CATEGORY ===== */
+    //Expense
     int expCount = expenseCategory.size();
     out.write((char*)&expCount, sizeof(int));
     for (int i = 0; i < expCount; i++) {
         Expense& exp = expenseCategory[i];
+
         out.write((char*)&exp.id, sizeof(int));
         writeString(out, exp.name);
     }
 
-    /* ===== TRANSACTION ===== */
+    //Transaction
     int transCount = transactions.size();
     out.write((char*)&transCount, sizeof(int));
     for (int i = 0; i < transCount; i++) {
         Transaction& t = transactions[i];
+
         out.write((char*)&t.id, sizeof(int));
         out.write((char*)&t.type, sizeof(int));
         out.write((char*)&t.CategoryId, sizeof(int));
@@ -372,23 +563,21 @@ void FinanceManager::saveData() {
         writeString(out, t.description);
     }
 
-    /* ===== RECURRING TRANSACTION ===== */
+    //Recurring Transaction
     int recurCount = recurringTransactions.size();
     out.write((char*)&recurCount, sizeof(int));
     for (int i = 0; i < recurCount; i++) {
         RecurringTransaction& r = recurringTransactions[i];
 
+        out.write((char*)&r.id, sizeof(int));
         out.write((char*)&r.type, sizeof(int));
-        out.write((char*)&r.CategoryId, sizeof(int));
+        out.write((char*)&r.categoryId, sizeof(int));
         out.write((char*)&r.walletId, sizeof(int));
         out.write((char*)&r.amount, sizeof(double));
-
         out.write((char*)&r.startDate, sizeof(Date));
         out.write((char*)&r.endDate, sizeof(Date));
-        out.write((char*)&r.nextDueDate, sizeof(Date));
-
-        out.write((char*)&r.isFinished, sizeof(bool));
-        writeString(out, r.description);
+        out.write((char*)&r.lastProcessedDate, sizeof(Date));
+        writeString(out, r.desc);
     }
 
     out.close();
@@ -404,7 +593,7 @@ void FinanceManager::loadData() {
     transactions.clear();
     recurringTransactions.clear();
 
-    /* ===== WALLET ===== */
+    //Wallet
     int walletCount;
     in.read((char*)&walletCount, sizeof(int));
     for (int i = 0; i < walletCount; i++) {
@@ -412,30 +601,33 @@ void FinanceManager::loadData() {
         in.read((char*)&w.id, sizeof(int));
         readString(in, w.name);
         in.read((char*)&w.balance, sizeof(double));
+
         wallets.add(w);
     }
 
-    /* ===== INCOME CATEGORY ===== */
+    //Income
     int incCount;
     in.read((char*)&incCount, sizeof(int));
     for (int i = 0; i < incCount; i++) {
         Income inc;
         in.read((char*)&inc.id, sizeof(int));
         readString(in, inc.name);
+
         incomeCategory.add(inc);
     }
 
-    /* ===== EXPENSE CATEGORY ===== */
+    //Expense
     int expCount;
     in.read((char*)&expCount, sizeof(int));
     for (int i = 0; i < expCount; i++) {
         Expense exp;
         in.read((char*)&exp.id, sizeof(int));
         readString(in, exp.name);
+
         expenseCategory.add(exp);
     }
 
-    /* ===== TRANSACTION ===== */
+    //Transaction
     int transCount;
     in.read((char*)&transCount, sizeof(int));
     for (int i = 0; i < transCount; i++) {
@@ -447,26 +639,24 @@ void FinanceManager::loadData() {
         in.read((char*)&t.amount, sizeof(double));
         in.read((char*)&t.date, sizeof(Date));
         readString(in, t.description);
+
         transactions.add(t);
     }
 
-    /* ===== RECURRING TRANSACTION ===== */
+    //Recurring Transaction
     int recurCount;
     in.read((char*)&recurCount, sizeof(int));
     for (int i = 0; i < recurCount; i++) {
         RecurringTransaction r;
-
+        in.read((char*)&r.id, sizeof(int));
         in.read((char*)&r.type, sizeof(int));
-        in.read((char*)&r.CategoryId, sizeof(int));
+        in.read((char*)&r.categoryId, sizeof(int));
         in.read((char*)&r.walletId, sizeof(int));
         in.read((char*)&r.amount, sizeof(double));
-
         in.read((char*)&r.startDate, sizeof(Date));
         in.read((char*)&r.endDate, sizeof(Date));
-        in.read((char*)&r.nextDueDate, sizeof(Date));
-
-        in.read((char*)&r.isFinished, sizeof(bool));
-        readString(in, r.description);
+        in.read((char*)&r.lastProcessedDate, sizeof(Date));
+        readString(in, r.desc);
 
         recurringTransactions.add(r);
     }

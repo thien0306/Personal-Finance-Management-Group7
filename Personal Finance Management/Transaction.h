@@ -3,7 +3,10 @@
 #include <string>
 #include "Date.h"
 using namespace std;
-enum TransactionType { INCOME = 1, EXPENSE = 2 };
+enum TransactionType {
+	INCOME = 1,
+	EXPENSE = 2 
+};
 
 class Transaction {
 public:

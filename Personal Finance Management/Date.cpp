@@ -1,3 +1,4 @@
+#define _CRT_SECURE_NO_WARNINGS
 #include "Date.h" 
 #include <cstdio> 
 #include <ctime>   
@@ -52,6 +53,16 @@ Date Date::fromString(string dateStr) {
     return Date();
 }
 
+void Date::setIndefinite() {
+    day = 0;
+    month = 0;
+    year = 0;
+}
+
+bool Date::isIndefinite() const {
+    return (day == 0 && month == 0 && year == 0);
+}
+
 bool Date::isValid() const {
     if (year < 1900 || year > 2100) return false;
     if (month < 1 || month > 12) return false;
@@ -88,8 +99,9 @@ istream& operator>>(istream& is, Date& date) {
 }
 
 ostream& operator<<(ostream& os, const Date& date) {
-    os << setfill('0') << setw(2) << date.day << "/"
-        << setfill('0') << setw(2) << date.month << "/"
+    os << right <<setfill('0') << setw(2) << date.day << "/"
+        << right << setfill('0') << setw(2) << date.month << "/"
         << date.year;
+    os << setfill(' ');
     return os;
 }

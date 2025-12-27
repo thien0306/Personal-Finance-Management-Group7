@@ -40,11 +40,10 @@ public:
 		items[count] = item;
 		count++;
 	}
-	void remove(int index) {
-		if (index < 0 || index >= count) {
-			cout << "The index you have inputted is invalid.";
-			return;
-		}
+	void removeAt(int index) {
+		if (index < 0 || index >= count) return;
+
+		
 		for (int i = index; i < count - 1; i++) {
 			items[i] = items[i + 1];
 		}
