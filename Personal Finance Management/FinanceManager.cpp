@@ -36,6 +36,13 @@ void FinanceManager::refreshNextIds() {
     }
 }
 
+double FinanceManager::totalbalance() {
+    double total = 0;
+    for (int i = 0; i < wallets.size(); i++) {
+        total += wallets[i].balance;
+    }
+    return total;
+}
 
 void FinanceManager::addWallet(string name, long long initialBalance) {
     int newId = wallets.size() + 1;

@@ -44,6 +44,7 @@ int main() {
     int choice = -1;
     while (choice != 0) {
         clearScreen();
+        cout << "So du cua ban: " << (long long)app.totalbalance() << endl;
         cout << "==========================================\n";
         cout << "      QUAN LY TAI CHINH CA NHAN    \n";
         cout << "==========================================\n";

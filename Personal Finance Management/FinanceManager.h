@@ -30,6 +30,7 @@ public:
     FinanceManager();
     ~FinanceManager();
     void refreshNextIds();
+    double totalbalance();
     void addWallet(string name, long long initialBalance);
     void addTransaction(int walletId, int categoryId, TransactionType type, double amount, string desc, Date date);
     void addExpenseCategory(string name);
